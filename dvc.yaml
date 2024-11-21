@@ -1,5 +1,8 @@
 stages:
   
+  update_biobricks_dependencies:
+    cmd: stages/00_update_biobricks_dependencies.py
+    
   process-annotations:
     cmd: stages/01_process.py
     deps:
