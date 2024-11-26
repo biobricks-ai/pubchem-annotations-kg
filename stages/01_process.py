@@ -3,7 +3,6 @@ import pandas as pd
 import json
 import pathlib 
 from tqdm import tqdm
-import random
 
 tqdm.pandas()
 
@@ -16,48 +15,73 @@ pa_brick = bb.assets('pubchem-annotations')
 rawpa = pd.read_parquet(pa_brick.annotations_parquet)
 rawpa = rawpa.head(1000)
 
-# filter pa to rows where there is a single pubchem_cid and map to an int
-pa1 = rawpa[rawpa['PubChemCID'].progress_apply(lambda x: len(x) == 1)]
-pa1['PubChemCID'] = pa1['PubChemCID'].progress_apply(lambda x: int(x[0]))
-
-# get row1 and make it json for a pretty print
-print(json.dumps(pa1.iloc[0].apply(str).to_dict(), indent=4))
-
-# create annotations
-# annotations = []
-# for obj in tqdm(data_obj):
-#     # Check if the 'Value' key exists and contains 'StringWithMarkup'
-#     if 'Value' in obj and 'StringWithMarkup' in obj['Value']:
-#         # Extract the value from the 'StringWithMarkup' key
-#         value = obj['Value']['StringWithMarkup'][0]['String']
-#         # Create an annotation with 'have_value' and the extracted value
-#         annotation = {'has_value': True, 'value': value}
-#         annotations.append(annotation)
+# get row0 and make it json for a pretty print
+row0 = rawpa.iloc[0]
+print(json.dumps(row0.apply(str).to_dict(), indent=4))
 
 # - [x] create chemical
 # - [x] create annotation
 # - [x] create annotation has_subject chemical
-# - [ ] create annotation has_value value
-# loop through pa1 creating a chemical for each
-row = pa1.iloc[0]
-for index, row in tqdm(pa1.iterrows()):
+# - [x] create annotation has_value value
+#       extract this vaue from row.Data.Value.StringWithMarkup
+#       create a new triple for each string and the StringWithMarkup array
+#       check dcterms ontology for a good predicate to associate string with markup value to its annotation
+# - [x] remove filter to allow multiple pubchem CIDs for annotation
+
+annotations = []
+annotations.append(
+'''@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix pccompound: <http://rdf.ncbi.nlm.nih.gov/pubchem/compound/> .
+@prefix pcannotation: <http://rdf.ncbi.nlm.nih.gov/pubchem/annotation/> .
+@prefix oa: <http://www.w3.org/ns/oa#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/>.
+'''
+)
+with open(outdir / 'annotations.ttl', 'w') as f:
+    f.write(annotations[0])
+
+# loop through rawpa creating a chemical for each row
+for index, row in tqdm(rawpa.iterrows()):
     cid = row['PubChemCID']
-    chem_iri = f"http://rdf.ncbi.nlm.nih.gov/pubchem/compound/CID{cid}"    
+    # chem_iri = f"http://rdf.ncbi.nlm.nih.gov/pubchem/compound/CID{cid}"    
 
     # create an annotation
-    # anid = row['ANID']
-    anid = random.randint(100000, 999999)
+    anid = row['ANID']
     annotation_iri = f"http://rdf.ncbi.nlm.nih.gov/pubchem/annotation/ANID{anid}"
 
     # create the value for the annotation
+    # # Parse the Data Field as JSON
+    data = json.loads(row['Data'])
+    string_with_markup = data.get('Value', {}).get('StringWithMarkup', [{}])[0].get('String', '')
+    string_with_markup = string_with_markup.replace('\\', '\\\\')
+    string_with_markup = string_with_markup.replace('"', r'\"')
+    
+    annotations.append(
+f'''
+pcannotation:ANID{anid}
+  a oa:Annotation ;
+'''
+    )
 
-    # create a relationship between the chemical and the annotation
-    has_subject = "http://purl.org/dc/terms/subject"
-    triple = (annotation_iri, has_subject, chem_iri)
+    # add the CID to the annotation, skip if there are no CIDs
+    if len(cid) > 0:
+      for c in cid:
+        annotations[-1] += f'  oa:hasTarget pccompound:CID{c} ;\n'
+      for c in cid:
+        annotations[-1] += f'  dc:subject   pccompound:CID{c} ;\n'
 
-    # write the triple to a turtle file
+    # triple quotes used to allow multi-line strings
+    # space after {string_with_markup} ensures quotes not broken
+    annotations[-1] += \
+fr'''  oa:hasBody [
+  rdf:value """{string_with_markup} """ ;
+  dc:format "text/plain"
+] .
+'''
+
+    # write the annotation to a turtle file
     with open(outdir / 'annotations.ttl', 'a') as f:
-        f.write(f"<{triple[0]}> <{triple[1]}> <{triple[2]}> .\n")
+        f.write(annotations[-1])
     
     # add a has_annotation
 
