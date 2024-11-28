@@ -123,7 +123,7 @@ for index, row in tqdm(rawpa.iterrows(), total = len(rawpa), desc = "Processing 
 
 print("Creating HDT file ...")
 # Serialize the graph to a string in Turtle format
-turtle_file = str(cachedir / "temp_graph.ttl")
+turtle_file = str(cachedir / "annotations.ttl")
 g.serialize(destination=turtle_file, format='turtle')
 
 # Convert the Turtle file to an HDT file
@@ -132,5 +132,5 @@ hdt_file = str(outdir / 'annotations.hdt')
 subprocess.run(["rdf2hdt", turtle_file, hdt_file], check=True)
 print(f"Done writing HDT file to {hdt_file}")
 
-# delete cache directory
-shutil.rmtree(pathlib.Path('cache'))
+# # delete cache directory
+# shutil.rmtree(pathlib.Path('cache'))
