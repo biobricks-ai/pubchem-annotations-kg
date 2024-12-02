@@ -1,36 +1,43 @@
 import biobricks as bb
 import pandas as pd
+import pyarrow.parquet as pq
 import json
 import pathlib
-import shutil
+# import shutil
 from tqdm import tqdm
 from rdflib import Graph, Literal, Namespace, RDF, URIRef
+# from rdflib_hdt import HDTStore
 import subprocess
+import glob
+# from hdt import HDTDocument
 
 tqdm.pandas()
 
-# cachedir for ttl and nt files, if needed
+# cachedir for ttl files, if needed
 cachedir = pathlib.Path('cache/process')
 cachedir.mkdir(parents=True, exist_ok=True)
-# remove unneeded files after (ttl, nt)
+# remove unneeded files after processing
 
 # outdir should be brick (hdt file only)
 outdir = pathlib.Path('./brick')
 outdir.mkdir(parents=True, exist_ok=True)
 
+print('Reading annotations ...')
 pa_brick = bb.assets('pubchem-annotations')
-
+print("Done reading annotations")
+print(pa_brick.annotations_parquet)
 # pa_brick has a single table `annotations_parquet`
-# TODO pubchem-annotations isn't big but in the future spark or dask is a better choice.
-rawpa = pd.read_parquet(pa_brick.annotations_parquet)
-rawpa = rawpa.head(1000)
+# use pyarrow to read the parquet file in chunks
+rawpa = pq.ParquetFile(pa_brick.annotations_parquet)
+n_row = rawpa.metadata.num_rows
+print(f"Number of rows: {n_row}")
 
 # get row0 and make it json for a pretty print
-row0 = rawpa.iloc[0]
+row_group0 = rawpa.read_row_group(0).to_pandas()
+row0 = row_group0.iloc[0]
 print(json.dumps(row0.apply(str).to_dict(), indent=4))
 
-# Create a new RDF graph
-g = Graph()
+
 
 # Define namespaces
 namespaces_sources = {
@@ -43,10 +50,6 @@ namespaces_sources = {
 }
 
 namespaces = {key: Namespace(val) for key, val in namespaces_sources.items()}
-
-# Bind namespaces
-for key, val in namespaces.items():
-    g.bind(key, val)
 
 ''' VISUAL REPRESENTATION OF GRAPH COMPONENT
 *markup is short for string_with_markup
@@ -82,54 +85,96 @@ for key, val in namespaces.items():
 				  +-------------------+          +-------------------+
 '''
 
-# loop through rawpa creating a chemical for each row
-# convert to list? for ETC
-for index, row in tqdm(rawpa.iterrows(), total = len(rawpa), desc = "Processing rows"):
-    cid = row['PubChemCID']
-    sid = row['PubChemSID']
-    anid = row['ANID']
+batch_size = 10000
+n_batch = n_row // batch_size + 1
+batch_num = -1
+# loop through rawpa, creating a chemical for each row
+for batch in tqdm(rawpa.iter_batches(batch_size), total = n_batch, desc = "Processing batches"):
+    batch_num += 1
+    batch_df = batch.to_pandas()
+    # Create a new RDF graph
+    g = Graph()
+    # Bind namespaces
+    for key, val in namespaces.items():
+        g.bind(key, val)
 
-    # Create URIs
-    annotation_iri = URIRef(namespaces["pcannotation"] + f"ANID{anid}")
-    compound_iri = [URIRef(namespaces["pccompound"] + f"CID{c}") for c in cid]
-    substance_iri = [URIRef(namespaces["pcsubstance"] + f"CID{s}") for s in sid]
+    for index, row in batch_df.iterrows():
+        cid = row['PubChemCID']
+        sid = row['PubChemSID']
+        anid = row['ANID']
 
-    # create the value for the annotation
-    # # Parse the Data Field as JSON
-    data = json.loads(row['Data'])
-    # # annotation may have multiple values
-    string_with_markup_list = [markup.get('String', '') for markup in data.get('Value', {}).get('StringWithMarkup', [])]
+        # Create URIs
+        annotation_iri = URIRef(namespaces["pcannotation"] + f"ANID{anid}")
+        compound_iri = [URIRef(namespaces["pccompound"] + f"CID{c}") for c in cid]
+        substance_iri = [URIRef(namespaces["pcsubstance"] + f"CID{s}") for s in sid]
 
-    # add triples to the graph
-    g.add((annotation_iri, RDF.type, namespaces["oa"].Annotation))
+        # create the value for the annotation
+        # # Parse the Data Field as JSON
+        data = json.loads(row['Data'])
+        # # annotation may have multiple values
+        string_with_markup_list = [markup.get('String', '') for markup in data.get('Value', {}).get('StringWithMarkup', [])]
 
-    # add the CID to the annotation, skip if there are no CIDs
-    for ci in compound_iri:
-        g.add((annotation_iri, namespaces["oa"].hasTarget, ci))
-        g.add((annotation_iri, namespaces["dc"].subject, ci))
+        # add triples to the graph
+        g.add((annotation_iri, RDF.type, namespaces["oa"].Annotation))
 
-    # add SID to the annotation, skip if there are no SIDs
-    for si in substance_iri:
-        g.add((annotation_iri, namespaces["oa"].hasTarget, si))
-        g.add((annotation_iri, namespaces["dc"].subject, si))
+        # add the CID to the annotation, skip if there are no CIDs
+        for ci in compound_iri:
+            g.add((annotation_iri, namespaces["oa"].hasTarget, ci))
+            g.add((annotation_iri, namespaces["dc"].subject, ci))
 
-    body = URIRef(f"{annotation_iri}/body")
-    g.add((annotation_iri, namespaces["oa"].hasBody, body))
-    # triple quotes used to allow multi-line strings
-    for swm in string_with_markup_list:
-        g.add((body, RDF.value, Literal(swm)))
+        # add SID to the annotation, skip if there are no SIDs
+        for si in substance_iri:
+            g.add((annotation_iri, namespaces["oa"].hasTarget, si))
+            g.add((annotation_iri, namespaces["dc"].subject, si))
 
-    g.add((body, namespaces["dc"]["format"], Literal("text/plain")))
+        body = URIRef(f"{annotation_iri}/body")
+        g.add((annotation_iri, namespaces["oa"].hasBody, body))
+        # triple quotes used to allow multi-line strings
+        for swm in string_with_markup_list:
+            g.add((body, RDF.value, Literal(swm)))
+
+        g.add((body, namespaces["dc"]["format"], Literal("text/plain")))
+
+    # Serialize the graph to a string in Turtle format
+    turtle_file = str(cachedir / f"annotations_{batch_num}.ttl")
+    g.serialize(destination=turtle_file, format='turtle')
+
+print("Combining Turtle files ...")
+annotation_files = sorted(glob.glob(str(cachedir / 'annotations_*.ttl')))
+combined_file = str(cachedir / 'combined_annotations.ttl')
+# concatenate all batches
+with open(combined_file, "w") as outfile:
+    for file in annotation_files:
+        with open(file, "r") as infile:
+            outfile.write(infile.read())
+            outfile.write("\n")  # Ensure separation between files
 
 print("Creating HDT file ...")
-# Serialize the graph to a string in Turtle format
-turtle_file = str(cachedir / "annotations.ttl")
-g.serialize(destination=turtle_file, format='turtle')
-
 # Convert the Turtle file to an HDT file
 hdt_file = str(outdir / 'annotations.hdt')
+# # # create empty HDT file
+# with open(hdt_file, "w") as f:
+#     pass
+
+# # # Create an HDT store
+# store = HDTStore(hdt_file)
+
+# # # load the entire graph into the store
+# g = Graph()
+# g.parse(combined_file, format='ttl')
+
+# # # add the graph to the store
+# store.load_graph(g) # or add_graph?
+
+# # close the store to finalize the HDT file
+# store.close()
+
+# hdt = HDTDocument().from_graph(g)
+
+# Conversion using the command-line tool rdf2hdtcat
+subprocess.run(["rdf2hdtcat -p", combined_file, hdt_file], check=True)
 # # Conversion using the command-line tool rdf2hdt
-subprocess.run(["rdf2hdt", turtle_file, hdt_file], check=True)
+# subprocess.run(["rdf2hdt -p", combined_file, hdt_file], check=True)
 print(f"Done writing HDT file to {hdt_file}")
 
 # # delete cache directory

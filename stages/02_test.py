@@ -1,22 +1,26 @@
 import rdflib
 import pathlib
+from rdflib_hdt import HDTStore
 
 outdir = pathlib.Path('cache/test')
 outdir.mkdir(parents=True, exist_ok=True)
 
-# Read the turtle file into a graph
-graph = rdflib.Graph()
-turtle_file = outdir / 'annotations.ttl'
+# Path to the HDT file
+hdt_file = pathlib.Path('brick/annotations.hdt')
 
 try:
-    # Parse the Turtle file into the RDF graph
-    graph.parse(source=turtle_file.as_posix(), format="turtle")
+    # Load the HDT file into an RDFLib graph
+    store = HDTStore(hdt_file.as_posix())
+    graph = rdflib.Graph(store=store)
+
+    # Count the number of triples
+    triple_count = sum(1 for _ in graph.triples((None, None, None)))
 
     # Generate metadata
     metadata = {
-        "triple_count": len(graph),
+        "triple_count": triple_count,
         "namespaces": list(graph.namespaces()),
-        "sample_triples": list(graph)[:5]  # Limit to first 5 triples
+        "sample_triples": list(graph.triples((None, None, None)))[:5]  # Limit to first 5 triples
     }
 
     # Write metadata to a file

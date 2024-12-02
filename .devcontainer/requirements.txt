@@ -5,3 +5,8 @@ fastparquet==2024.5.0
 pyarrow==16.1.0
 dvc==3.51.1
 dvc-s3==3.2.0
+rdflib==7.1.1
+meson==1.6.0
+ninja==1.11.1.2
+rdflib-hdt==3.1  # for reading HDT files
+hdt==2.3  # for writing HDT files
