@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import biobricks as bb
 import pandas as pd
 import pyarrow.parquet as pq
@@ -148,34 +150,3 @@ with open(combined_file, "w") as outfile:
         with open(file, "r") as infile:
             outfile.write(infile.read())
             outfile.write("\n")  # Ensure separation between files
-
-print("Creating HDT file ...")
-# Convert the Turtle file to an HDT file
-hdt_file = str(outdir / 'annotations.hdt')
-# # # create empty HDT file
-# with open(hdt_file, "w") as f:
-#     pass
-
-# # # Create an HDT store
-# store = HDTStore(hdt_file)
-
-# # # load the entire graph into the store
-# g = Graph()
-# g.parse(combined_file, format='ttl')
-
-# # # add the graph to the store
-# store.load_graph(g) # or add_graph?
-
-# # close the store to finalize the HDT file
-# store.close()
-
-# hdt = HDTDocument().from_graph(g)
-
-# Conversion using the command-line tool rdf2hdtcat
-subprocess.run(["rdf2hdtcat -p", combined_file, hdt_file], check=True)
-# # Conversion using the command-line tool rdf2hdt
-# subprocess.run(["rdf2hdt -p", combined_file, hdt_file], check=True)
-print(f"Done writing HDT file to {hdt_file}")
-
-# # delete cache directory
-# shutil.rmtree(pathlib.Path('cache'))

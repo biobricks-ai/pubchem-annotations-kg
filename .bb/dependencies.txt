@@ -1,1 +1,1 @@
-https://github.com/biobricks-ai/pubchem-annotations#4bc6de375ba7dbdbd2986b53d952e41ace592551
+https://github.com/biobricks-ai/pubchem-annotations#3b1b417e43b17b6caf75a730f8c4119aa76f8c16
