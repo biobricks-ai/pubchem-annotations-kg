@@ -1,2 +1,45 @@
 schema: '2.0'
-stages: {}
+stages:
+  update_biobricks_dependencies:
+    cmd: stages/00_update_biobricks_deps.sh
+    deps:
+    - path: stages/00_update_biobricks_deps.sh
+      hash: md5
+      md5: fc8078fa10a515838c0bdd46f3d89127
+      size: 32
+  process-annotations:
+    cmd: stages/01_process.py
+    deps:
+    - path: .bb/dependencies.txt
+      hash: md5
+      md5: 8da1cbf5465d917e74655708a4357ddf
+      size: 93
+    - path: stages/01_process.py
+      hash: md5
+      md5: ca5bfb5063f33d221f14e6b010a896be
+      size: 6025
+    outs:
+    - path: cache/process/combined_annotations.ttl
+      hash: md5
+      md5: 9e407f729c445a864cf3ef5cb5803568
+      size: 7063736995
+  build:
+    cmd: stages/02_build.sh
+    deps:
+    - path: cache/process/combined_annotations.ttl
+      hash: md5
+      md5: 9e407f729c445a864cf3ef5cb5803568
+      size: 7063736995
+    - path: stages/02_build.sh
+      hash: md5
+      md5: 9e3974eba3e2118f230e10967dec1987
+      size: 515
+    outs:
+    - path: brick/annotations.hdt
+      hash: md5
+      md5: 188f7cc4f3b623e1a213c6aa4a12569b
+      size: 1026674753
+    - path: brick/annotations.hdt.index.v1-1
+      hash: md5
+      md5: daa1e09f9599fb6db5979580d2e8ea41
+      size: 500214214
