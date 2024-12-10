@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import rdflib
 import pathlib
 from rdflib_hdt import HDTStore

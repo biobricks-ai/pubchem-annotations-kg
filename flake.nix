@@ -19,17 +19,17 @@
   outputs = { self, nixpkgs, flake-utils, hdt-cpp, hdt-java }:
     flake-utils.lib.eachDefaultSystem (system:
       with import nixpkgs { inherit system; }; {
-	devShells.default = mkShell {
-	  buildInputs = [
+        devShells.default = mkShell {
+          buildInputs = [
             hdt-cpp.packages.${system}.default
-	    hdt-java.packages.${system}.default
-	    apache-jena
-	    apache-jena-fuseki
-	    jq
-	  ];
-	  env = {
-	    JENA_HOME = "${apache-jena}";
-	  };
-	};
+            hdt-java.packages.${system}.default
+            apache-jena
+            apache-jena-fuseki
+            jq
+          ];
+          env = {
+            JENA_HOME = "${apache-jena}";
+          };
+        };
       });
 }

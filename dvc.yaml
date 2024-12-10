@@ -1,11 +1,22 @@
 stages:
   
   update_biobricks_dependencies:
-    cmd: stages/00_update_biobricks_dependencies.py
+    cmd: stages/00_update_biobricks_deps.sh
+    deps:
+      - stages/00_update_biobricks_deps.sh
     
   process-annotations:
     cmd: stages/01_process.py
     deps:
       - .bb/dependencies.txt
+      - stages/01_process.py
     outs:
-      - brick/pubchem-annotations.hdt
+      - cache/process/combined_annotations.ttl
+  build:
+    cmd: stages/02_build.sh
+    deps:
+      - cache/process/combined_annotations.ttl
+      - stages/02_build.sh
+    outs:
+      - brick/annotations.hdt
+      - brick/annotations.hdt.index.v1-1
