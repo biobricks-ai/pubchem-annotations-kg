@@ -58,8 +58,9 @@ def norm_unit(u):
     u = re.sub(r'\bat\b.*$', '', u, flags=re.I)
     u = u.strip().rstrip('.,;').strip()
     u = re.sub(r'^dec\s+', '', u)
-    u = u.replace('mm Hg', 'mmHg').replace('cu cm', 'cm3')
-    for a, b in {'g/l':'g/L','mg/l':'mg/L','mg/ml':'mg/mL','g/ml':'g/mL','/ml':'/mL','µ':'u','μ':'u'}.items():
+    u = u.replace('mm Hg', 'mmHg').replace('cu cm', 'cm3').replace('²', '2')
+    for a, b in {'g/l':'g/L','mg/l':'mg/L','mg/ml':'mg/mL','g/ml':'g/mL','/ml':'/mL','µ':'u','μ':'u',
+                 'g/100 mL':'g/100mL','kj/mol':'kJ/mol'}.items():
         u = u.replace(a, b)
     return u or None
 

@@ -29,6 +29,10 @@
     "mg/L": "http://purl.obolibrary.org/obo/UO_0000273",
     "mg/mL": "http://purl.obolibrary.org/obo/UO_0000176",
     "%": "http://purl.obolibrary.org/obo/UO_0000187",
-    "cP": "http://purl.obolibrary.org/obo/NCIT_C69092"
+    "cP": "http://purl.obolibrary.org/obo/NCIT_C69092",
+    "kJ/mol": "http://qudt.org/vocab/unit/KiloJ-PER-MOL",
+    "mm2/s": "http://qudt.org/vocab/unit/MilliM2-PER-SEC",
+    "ug/mL": "http://qudt.org/vocab/unit/MicroGM-PER-MilliL",
+    "g/100mL": "http://qudt.org/vocab/unit/GM-PER-DeciL"
   }
 }
