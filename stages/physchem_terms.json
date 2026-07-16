@@ -1,0 +1,34 @@
+{
+  "properties": {
+    "Boiling Point": "http://purl.enanomapper.org/onto/ENM_9000100",
+    "Melting Point": "http://semanticscience.org/resource/CHEMINF_000256",
+    "LogP": "http://semanticscience.org/resource/CHEMINF_000251",
+    "Vapor Pressure": "http://semanticscience.org/resource/CHEMINF_000419",
+    "Density": "http://purl.enanomapper.org/onto/ENM_0000084",
+    "Flash Point": "http://semanticscience.org/resource/CHEMINF_000417",
+    "Solubility": "http://purl.enanomapper.org/onto/ENM_0000089",
+    "Refractive Index": "http://semanticscience.org/resource/CHEMINF_000228",
+    "Dissociation Constants": "http://semanticscience.org/resource/CHEMINF_000195",
+    "Vapor Density": "http://semanticscience.org/resource/CHEMINF_000440",
+    "Heat of Vaporization": "http://semanticscience.org/resource/CHEMINF_000418",
+    "Henry's Law Constant": "http://semanticscience.org/resource/CHEMINF_000433",
+    "Viscosity": "http://purl.obolibrary.org/obo/PATO_0000992"
+  },
+  "units": {
+    "°C": "http://purl.obolibrary.org/obo/UO_0000027",
+    "°F": "http://purl.obolibrary.org/obo/UO_0000195",
+    "K": "http://purl.obolibrary.org/obo/UO_0000012",
+    "mmHg": "http://purl.obolibrary.org/obo/UO_0000272",
+    "torr": "http://purl.obolibrary.org/obo/UO_0000272",
+    "Pa": "http://purl.obolibrary.org/obo/UO_0000110",
+    "kPa": "http://qudt.org/vocab/unit/KiloPA",
+    "atm": "http://qudt.org/vocab/unit/ATM",
+    "g/cm3": "http://purl.obolibrary.org/obo/UO_0000084",
+    "g/mL": "http://purl.obolibrary.org/obo/UO_0000173",
+    "g/L": "http://purl.obolibrary.org/obo/UO_0000175",
+    "mg/L": "http://purl.obolibrary.org/obo/UO_0000273",
+    "mg/mL": "http://purl.obolibrary.org/obo/UO_0000176",
+    "%": "http://purl.obolibrary.org/obo/UO_0000187",
+    "cP": "http://purl.obolibrary.org/obo/NCIT_C69092"
+  }
+}
